@@ -82,6 +82,21 @@ class Member extends Model
     {
         return $this->hasMany(Donation::class);
     }
+    public function totalMonthlyPaid(): float
+    {
+        return (float) $this->monthlyPayments()->sum('paid_amount');
+    }
+
+    public function totalMonthlyBalance(): float
+    {
+        return (float) $this->monthlyPayments()
+                            ->whereIn('status', ['unpaid', 'partial'])
+                            ->sum('balance_amount');
+    }
+    public function registrationBalance(): float
+    {
+        return (float) optional($this->registrationPayment)->balance_amount ?? 0;
+    }
 
     public function totalDonations(): float
     {

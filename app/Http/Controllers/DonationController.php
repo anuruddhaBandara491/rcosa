@@ -15,14 +15,16 @@ class DonationController extends Controller
     {
         $term = trim($request->input('q', ''));
 
-        $members = Member::when(strlen($term) >= 1, fn($q) =>
-            $q->where('name_with_initials', 'like', "%{$term}%")
-              ->orWhere('nic_number',        'like', "%{$term}%")
-              ->orWhere('phone_number',      'like', "%{$term}%")
-        )
-        ->orderBy('name_with_initials')
-        ->limit(20)
-        ->get(['id', 'name_with_initials', 'nic_number', 'phone_number', 'occupation', 'current_city']);
+        if (strlen($term) < 3) {
+            return response()->json([]);
+        }
+
+        $members = Member::where('name_with_initials', 'like', "%{$term}%")
+            ->orWhere('nic_number',   'like', "%{$term}%")
+            ->orWhere('phone_number', 'like', "%{$term}%")
+            ->orderBy('name_with_initials')
+            ->limit(10)
+            ->get(['id', 'name_with_initials', 'nic_number', 'phone_number', 'occupation', 'current_city']);
 
         // Select2 expects { results: [{id, text}] }
         return response()->json([

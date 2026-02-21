@@ -64,7 +64,7 @@
 /* Member option template */
 .s2-member-opt { display:flex; align-items:center; gap:10px; }
 .s2-avatar { width:30px; height:30px; border-radius:7px; background:linear-gradient(135deg,#1e3a5f,#0f1f3d); color:var(--gold); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
-.s2-name { font-weight:600; font-size:13.5px; color:var(--navy); }
+.s2-name { font-weight:600; font-size:13.5px; color:#dce3e3; }
 .s2-sub  { font-size:11px; color:#8494a9; }
 
 /* ── MEMBER PREVIEW PANEL ────────────────────────────── */
