@@ -35,6 +35,8 @@ return new class extends Migration
             // JSON optional fields
             $table->json('children_info')->nullable();   // [{name, school}]
             $table->text('siblings_info')->nullable();   // free text if unmarried
+            $table->enum('type', ['new', 'existing'])->default('new'); // for future use
+
 
             $table->timestamps();
             $table->softDeletes();

@@ -120,21 +120,23 @@
     </div>
     <div class="form-card-body">
         <div class="row g-3">
+            <div class="row">
+                @if($type === 'existing')
+                    <div class="col-md-4">
+                        <label class="form-label">Membership No. <span class="required-star">*</span></label>
+                        <input type="number" name="membership_number" class="form-control @error('membership_number') is-invalid @enderror"
+                            value="{{ $val('membership_number') }}" placeholder="Membership Number">
+                        @error('membership_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                @endif
 
-            <div class="col-md-4">
-                <label class="form-label">Membership No.</label>
-                <input type="number" name="membership_number" class="form-control @error('membership_number') is-invalid @enderror"
-                       value="{{ $val('membership_number') }}" placeholder="Auto if blank">
-                @error('membership_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <div class="col-md-8">
+                    <label class="form-label">Full Name <span class="required-star">*</span></label>
+                    <input type="text" name="name_with_initials" class="form-control @error('name_with_initials') is-invalid @enderror"
+                        value="{{ $val('name_with_initials') }}" required placeholder="e.g. A.B.C. Perera">
+                    @error('name_with_initials')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
             </div>
-
-            <div class="col-md-8">
-                <label class="form-label">Name With Initials <span class="required-star">*</span></label>
-                <input type="text" name="name_with_initials" class="form-control @error('name_with_initials') is-invalid @enderror"
-                       value="{{ $val('name_with_initials') }}" required placeholder="e.g. A.B.C. Perera">
-                @error('name_with_initials')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
-
             <div class="col-md-4">
                 <label class="form-label">Birthday <span class="required-star">*</span></label>
                 <input type="date" name="birthday" class="form-control @error('birthday') is-invalid @enderror"
@@ -191,7 +193,7 @@
                 @error('occupation')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
 
-            <div class="col-12">
+            <div class="col-md-6">
                 <label class="form-label">Address <span class="required-star">*</span></label>
                 <textarea name="address" rows="2" class="form-control @error('address') is-invalid @enderror"
                           required>{{ $val('address') }}</textarea>

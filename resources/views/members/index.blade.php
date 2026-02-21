@@ -183,9 +183,14 @@
         <h1>Members</h1>
         <p>Manage all Old Boys Society member records.</p>
     </div>
-    <a href="{{ route('members.create') }}" class="btn-new-member">
-        <i class="bi bi-person-plus-fill"></i> Register New Member
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('members.create', ['type' => 'new']) }}" class="btn-new-member">
+            <i class="bi bi-person-plus-fill"></i> Register New Member
+        </a>
+        <a href="{{ route('members.create', ['type' => 'existing']) }}" class="btn-new-member">
+            <i class="bi bi-person-plus-fill"></i> Add Existing Member
+        </a>
+    </div>
 </div>
 
 {{-- ── FILTER BAR ───────────────────────────────────── --}}

@@ -104,19 +104,39 @@ class MemberController extends Controller
     }
 
     // ── CREATE ────────────────────────────────────────────────
-    public function create()
+    public function create(Request $request)
     {
-        return view('members.create');
+        $type = $request->input('type', 'new');
+        return view('members.create', compact('type'));
     }
 
     // ── STORE ─────────────────────────────────────────────────
     public function store(Request $request)
     {
-        $validated = $request->validate($this->rules(), $this->messages());
+        $isExisting = $request->input('type') === 'existing';
 
+        $rules = $this->rules(); // your existing rules array
+
+        if ($isExisting) {
+            // Membership number is mandatory and must be unique
+            $rules['membership_number'] = ['required', 'integer', 'unique:members,membership_number'];
+        } else {
+            // Auto-generate — not submitted by user
+            unset($rules['membership_number']);
+        }
+        $validated = $request->validate($rules, $this->messages());
         $validated['children_info'] = $this->buildChildrenInfo($request);
         unset($validated['children']);
 
+        //membership_number auto-generation for new members
+        if (!$isExisting) {
+            $latestMember = Member::where('type', 'new')->latest('membership_number')->first();
+            if ($latestMember && $latestMember->membership_number) {
+                $validated['membership_number'] = $latestMember->membership_number + 1;
+            } else {
+                $validated['membership_number'] = 1002; // Starting point for new members-Given by the client
+            }
+        }
         // Cast married to bool
         $validated['married'] = (bool) $request->input('married');
 

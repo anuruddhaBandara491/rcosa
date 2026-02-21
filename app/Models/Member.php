@@ -87,5 +87,5 @@ class Member extends Model
     {
         return (float) $this->donations()->received()->sum('amount');
     }
-    
+
 }
