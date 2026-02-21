@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Member;
 use App\Models\RegistrationPayment;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class RegistrationPaymentController extends Controller
 {
@@ -36,6 +37,36 @@ class RegistrationPaymentController extends Controller
 
         return view('registration-payments.index', compact('payments', 'stats', 'fee'));
     }
+    public function searchMember(Request $request): JsonResponse
+    {
+        $term = trim($request->input('q', ''));
+
+        if (mb_strlen($term) < 3) {
+            return response()->json(['results' => []]);
+        }
+
+        $members = Member::with('registrationPayment')
+            ->where(function ($q) use ($term) {
+                $q->where('name_with_initials', 'like', "%{$term}%")
+                ->orWhere('nic_number',        'like', "%{$term}%");
+            })
+            ->orderBy('name_with_initials')
+            ->limit(20)
+            ->get();
+
+        return response()->json([
+            'results' => $members->map(fn ($m) => [
+                'id'         => $m->id,
+                'text'       => $m->name_with_initials . ' — ' . $m->nic_number,
+                'name'       => $m->name_with_initials,
+                'nic'        => $m->nic_number,
+                'phone'      => $m->phone_number,
+                'initials'   => strtoupper(substr($m->name_with_initials, 0, 1)),
+                'reg_status' => $m->registrationPayment->status    ?? 'unpaid',
+                'reg_paid'   => (float) ($m->registrationPayment->paid_amount ?? 0),
+            ]),
+        ]);
+    }
 
     // ── CREATE ─────────────────────────────────────────────────
     public function create(Request $request)
@@ -48,11 +79,7 @@ class RegistrationPaymentController extends Controller
             $selectedMember = Member::find($memberId);
         }
 
-        // Only members without an existing payment record (or partial payers)
-        // so we can add a new payment for them
-        $members = Member::orderBy('name_with_initials')->get();
-
-        return view('registration-payments.create', compact('fee', 'members', 'selectedMember'));
+        return view('registration-payments.create', compact('fee', 'selectedMember'));
     }
 
     // ── STORE ──────────────────────────────────────────────────
