@@ -19,7 +19,7 @@
 /* ═══ CARDS ════════════════════════════════════════════ */
 .obs-card {
     background:#fff; border:1px solid #e4e9f0;
-    border-radius:16px; overflow:hidden;
+    border-radius:16px; overflow:visible;
     animation:fadeUp .3s ease both; margin-bottom:18px;
 }
 .obs-card-header {
@@ -49,7 +49,7 @@
     position:absolute; top:calc(100% + 6px); left:0; right:0;
     background:#fff; border:1px solid #e4e9f0; border-radius:12px;
     box-shadow:0 10px 32px rgba(15,31,61,.12);
-    z-index:200; max-height:320px; overflow-y:auto; display:none;
+    z-index:9999; max-height:320px; overflow-y:auto; display:none;
 }
 .dropdown-item-member {
     display:flex; align-items:center; gap:12px;

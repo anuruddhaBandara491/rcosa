@@ -82,15 +82,14 @@ class MonthlyPayment extends Model
     /**
      * Get unpaid/partial months for a member from their start year to now.
      */
-    public static function unpaidMonthsForMember(Member $member, int $startYear = null): array
+    public static function unpaidMonthsForMember(Member $member): array
     {
         $fee   = self::monthlyFee();
         $start = Carbon::createFromDate(
-            $startYear ?? ($member->school_register_year ?? now()->year),
+            $member->register_date ?? now()->year,
             1, 1
         );
-        $now = now()->startOfMonth();
-
+        $now = now()->endOfMonth();
         $existing = self::where('member_id', $member->id)
             ->get()
             ->keyBy(fn($r) => "{$r->year}-{$r->month}");

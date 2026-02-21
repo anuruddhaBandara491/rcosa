@@ -17,7 +17,7 @@ class MonthlyPaymentController extends Controller
     {
         $term = trim($request->input('q', ''));
 
-        if (strlen($term) < 2) {
+        if (strlen($term) < 3) {
             return response()->json([]);
         }
 

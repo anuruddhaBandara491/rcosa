@@ -74,8 +74,8 @@ class Member extends Model
     public function currentMonthPayment()
     {
         return $this->hasOne(MonthlyPayment::class)
-                    ->whereYear('due_date',  now()->year)
-                    ->whereMonth('due_date', now()->month);
+                    ->whereYear('balance_amount',  now()->year)
+                    ->whereMonth('balance_amount', now()->month);
     }
 
     public function donations()

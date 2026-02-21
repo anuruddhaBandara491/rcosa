@@ -18,6 +18,7 @@ class MemberController extends Controller
             'email'                     => ['nullable', 'email', 'max:255'],
             'admission_number'          => ['nullable', 'string', 'max:100'],
             'date_joined_school'        => ['nullable', 'date'],
+            'register_date'             => ['nullable', 'date'],
 
             // Mandatory
             'name_with_initials'        => ['required', 'string', 'max:255'],
@@ -120,6 +121,7 @@ class MemberController extends Controller
         if ($isExisting) {
             // Membership number is mandatory and must be unique
             $rules['membership_number'] = ['required', 'integer', 'unique:members,membership_number'];
+            $rules['joined_date'] = ['required', 'date'];
         } else {
             // Auto-generate — not submitted by user
             unset($rules['membership_number']);

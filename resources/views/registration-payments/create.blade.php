@@ -335,7 +335,7 @@
                         @error('paid_amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">Payment Date <span class="req">*</span></label>
                         <input type="date" name="payment_date"
                                class="form-control @error('payment_date') is-invalid @enderror"
@@ -344,13 +344,27 @@
                         @error('payment_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">Receipt Number</label>
                         <input type="text" name="receipt_number"
                                class="form-control @error('receipt_number') is-invalid @enderror"
                                value="{{ old('receipt_number') }}"
                                placeholder="optional">
                         @error('receipt_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Discount</label>
+                        <div style="position:relative;">
+                            <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-weight:700;color:#8494a9;">Rs</span>
+                            <input type="text" name="discount_amount"
+                                id="discountAmountInput"
+                                class="form-control @error('discount_amount') is-invalid @enderror"
+                                style="padding-left:36px;"
+                                step="0.01" min="1" max="{{ $fee }}"
+                                value="{{ old('discount_amount') }}"
+                                placeholder="0.00">
+                        </div>
+                        @error('discount_amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="col-12">
@@ -423,6 +437,7 @@
 <script>
 const TOTAL_FEE  = parseFloat(document.getElementById('totalFeeVal').value);
 const paidInput  = document.getElementById('paidAmountInput');
+const discountInput = document.getElementById('discountAmountInput');
 let   alreadyPaid = 0;
 
 // ── FORMAT ──────────────────────────────────────────────
@@ -519,7 +534,7 @@ $('#memberSelect').on('select2:unselect select2:clear', function() {
 function updateCalc() {
     const payingNow = Math.max(0, parseFloat(paidInput.value) || 0);
     const totalPaid = Math.min(TOTAL_FEE, alreadyPaid + payingNow);
-    const balance   = Math.max(0, TOTAL_FEE - totalPaid);
+    const balance   = Math.max(0, TOTAL_FEE - totalPaid - (parseFloat(discountInput.value) || 0));
     const pct       = TOTAL_FEE > 0 ? Math.min(100, (totalPaid / TOTAL_FEE) * 100) : 0;
 
     document.getElementById('calcAlreadyPaid').textContent   = fmt(alreadyPaid);
@@ -544,6 +559,7 @@ function updateCalc() {
 }
 
 paidInput.addEventListener('input', updateCalc);
+discountInput.addEventListener('input', updateCalc);
 
 // ── HANDLE OLD() RE-POPULATION AFTER VALIDATION FAIL ────
 // If the form failed validation, the selected member is

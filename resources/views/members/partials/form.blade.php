@@ -249,6 +249,14 @@
     </div>
     <div class="form-card-body">
         <div class="row g-3">
+            @if($type === 'existing')
+                <div class="col-md-4">
+                    <label class="form-label">Joined Date for Old Student Association</label><span class="required-star">*</span>
+                    <input type="date" name="joined_date" class="form-control @error('joined_date') is-invalid @enderror"
+                           value="{{ $val('school_name') }}" required>
+                    @error('school_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+            @endif
             <div class="col-md-4">
                 <label class="form-label">School Register Year</label>
                 <input type="number" name="school_register_year" class="form-control @error('school_register_year') is-invalid @enderror"

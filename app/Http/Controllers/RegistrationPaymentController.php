@@ -93,6 +93,7 @@ class RegistrationPaymentController extends Controller
             'payment_date'   => ['required', 'date', 'before_or_equal:today'],
             'receipt_number' => ['nullable', 'string', 'max:100'],
             'notes'          => ['nullable', 'string', 'max:500'],
+            'discount_amount'=> ['nullable', 'numeric', 'min:0', 'max:' . $fee],
         ], [
             'member_id.required'   => 'Please select a member.',
             'member_id.exists'     => 'Selected member does not exist.',
