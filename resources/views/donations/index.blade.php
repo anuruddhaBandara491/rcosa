@@ -333,7 +333,7 @@
         <div style="font-size:12px;color:#8494a9;">
             Showing {{ $donations->firstItem() }}–{{ $donations->lastItem() }} of {{ $donations->total() }} donations
         </div>
-        {{ $donations->links() }}
+        {{ $donations->links('pagination::bootstrap-4') }}
     </div>
     @endif
 </div>

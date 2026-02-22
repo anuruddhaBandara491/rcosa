@@ -331,7 +331,7 @@
 
     @if($members->hasPages())
     <div style="padding:14px 20px;border-top:1px solid #f0f3f8;display:flex;justify-content:flex-end;">
-        {{ $members->links() }}
+        {{ $members->links('pagination::bootstrap-4') }}
     </div>
     @endif
 </div>

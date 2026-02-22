@@ -293,7 +293,7 @@
 
     @if($payments->hasPages())
     <div style="padding:14px 20px;border-top:1px solid #f0f3f8;display:flex;justify-content:flex-end;">
-        {{ $payments->links() }}
+        {{ $payments->links('pagination::bootstrap-4') }}
     </div>
     @endif
 </div>
