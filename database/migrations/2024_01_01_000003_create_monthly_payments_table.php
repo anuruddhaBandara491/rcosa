@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
+      public function up(): void
     {
         Schema::create('monthly_payments', function (Blueprint $table) {
             $table->id();
@@ -15,26 +15,34 @@ return new class extends Migration
                   ->constrained('members')
                   ->onDelete('cascade');
 
-            $table->unsignedTinyInteger('month');       // 1–12
-            $table->unsignedSmallInteger('year');       // e.g. 2024
+            // The actual amount handed over in this single transaction
+            $table->decimal('paid_amount',      10, 2);
 
-            $table->decimal('total_amount',   10, 2);   // from .env MONTHLY_FEE
-            $table->decimal('paid_amount',    10, 2)->default(0.00);
-            $table->decimal('balance_amount', 10, 2);
+            // Total fee owed by the member at time of payment (months × fee)
+            $table->decimal('total_due',        10, 2);
 
-            $table->enum('status', ['unpaid', 'partial', 'paid'])->default('unpaid');
+            // Running total of all payments for this member up to this row
+            $table->decimal('cumulative_paid',  10, 2);
 
-            $table->date('payment_date')->nullable();
-            $table->string('receipt_number')->nullable();
+            // total_due − cumulative_paid  (negative means overpaid)
+            $table->decimal('balance_amount',   10, 2);
+
+            // partial | paid | overpaid
+            $table->enum('status', ['partial', 'paid', 'overpaid'])->default('partial');
+
+            // JSON array of months this payment covers, e.g.:
+            // [{"month":4,"year":2025,"label":"April 2025","amount":1000},...]
+            $table->json('months_covered')->nullable();
+
+            $table->date('payment_date');
+            $table->string('receipt_number', 100)->nullable();
             $table->text('notes')->nullable();
 
             $table->timestamps();
             $table->softDeletes();
 
-            // One record per member per month+year
-            $table->unique(['member_id', 'month', 'year'], 'uniq_member_month_year');
             $table->index(['member_id', 'status']);
-            $table->index(['year', 'month']);
+            $table->index('payment_date');
         });
     }
 

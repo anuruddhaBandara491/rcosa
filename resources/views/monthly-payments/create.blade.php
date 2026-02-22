@@ -325,8 +325,8 @@
                     {{-- Pagination --}}
                     <div id="paginationBar" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 4px;flex-wrap:wrap;gap:8px;margin-top:4px;"></div>
 
-                    {{-- Hidden inputs submitted with form --}}
-                    <div id="hiddenInputs"></div>
+                    {{-- Single hidden paid_amount submitted to controller --}}
+                    <input type="hidden" name="paid_amount" id="paidAmountHidden" value="0">
                 </div>
 
             </div>
@@ -729,19 +729,12 @@ function goPage(p) {
 }
 
 // ══════════════════════════════════════════════════════════
-// HIDDEN INPUTS FOR FORM SUBMISSION
+// SYNC PAID AMOUNT TO HIDDEN INPUT FOR FORM SUBMISSION
+// One row = one transaction. Just pass the total amount.
 // ══════════════════════════════════════════════════════════
 function buildHiddenInputs(alloc) {
-    let idx = 0;
-    document.getElementById('hiddenInputs').innerHTML = alloc
-        .filter(a => a.applying > 0)
-        .map(a => {
-            const h = `<input type="hidden" name="payments[${idx}][month]"      value="${a.month}">
-                       <input type="hidden" name="payments[${idx}][year]"       value="${a.year}">
-                       <input type="hidden" name="payments[${idx}][pay_amount]" value="${a.applying.toFixed(2)}">`;
-            idx++;
-            return h;
-        }).join('');
+    const total = alloc.reduce((s, a) => s + (a.applying || 0), 0);
+    document.getElementById('paidAmountHidden').value = total.toFixed(2);
 }
 
 // ══════════════════════════════════════════════════════════
