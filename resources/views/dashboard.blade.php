@@ -186,9 +186,7 @@
                 <div class="stat-value">{{ number_format($stats['pending_registration']) }}</div>
                 <div class="stat-sub">Members awaiting payment</div>
             </div>
-            @if($stats['pending_registration'] > 0)
-                <span class="stat-change warn"><i class="bi bi-exclamation-circle"></i> Action needed</span>
-            @endif
+           
         </a>
     </div>
 
