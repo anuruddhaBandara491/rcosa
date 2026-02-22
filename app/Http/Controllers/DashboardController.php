@@ -25,7 +25,7 @@ class DashboardController extends Controller
         )->count();
 
         // Sum of all confirmed registration fee income
-        $registrationIncome = RegistrationPayment::where('status', 'paid')->sum('paid_amount');
+        $registrationIncome = RegistrationPayment::sum('paid_amount');
 
         // ── Monthly Fees ─────────────────────────────────────────────────
         // Total outstanding amount for the current month
@@ -35,7 +35,7 @@ class DashboardController extends Controller
             ->sum('balance_amount');
 
         // Sum of all collected monthly fees
-        $monthlyIncome = MonthlyPayment::where('status', 'paid')->sum('total_amount');
+        $monthlyIncome = MonthlyPayment::sum('total_amount');
 
         // ── Donations ────────────────────────────────────────────────────
         $totalDonations = Donation::where('status', 'received')->sum('amount');

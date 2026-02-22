@@ -8,9 +8,11 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MonthlyPaymentController;
 use App\Http\Controllers\DonationController;
 use App\Http\Controllers\MemberReportController;
+use App\Http\Controllers\AuthController;
 
-Route::get('/', function () {
-    return view('welcome');
+Route::controller(AuthController::class)->name('auth.')->group(function () {
+    Route::get('/', 'login')->name('login');
+    Route::post('/authenticate', 'authenticate')->name('authenticate');
 });
 
 Route::middleware('auth')->group(function () {
