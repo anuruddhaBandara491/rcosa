@@ -130,6 +130,11 @@
 .sp-mo-right { text-align:right; }
 .sp-mo-amt.full    { color:#4ade80;font-weight:700; }
 .sp-mo-amt.partial { color:var(--gold);font-weight:700; }
+
+.sp-val.gold   { color:var(--gold); }
+.sp-val.green  { color:#4ade80; }
+.sp-val.red    { color:#f87171; }
+.sp-val.purple { color:#a78bfa; }
 .sp-mo-tag { font-size:10px;color:#64748b;margin-top:1px; }
 
 .btn-submit { background:var(--gold);color:var(--navy);border:none;border-radius:10px;padding:13px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:4px;transition:opacity .2s; }
@@ -253,9 +258,9 @@
                         <input type="number" id="totalPayInput" placeholder="0.00" step="0.01" min="0" oninput="onAmountChange()">
                     </div>
                     <div class="chip-row" id="chipRow"></div>
-                    <div class="over-warn" id="overWarn">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                        Amount exceeds total outstanding balance. It will be capped at <span id="overWarnMax"></span>.
+                    <div class="over-warn" id="overWarn" style="color:#6d28d9;background:#ede9fe;border-radius:8px;padding:8px 12px;">
+                        <i class="bi bi-arrow-up-circle-fill"></i>
+                        Amount exceeds outstanding balance of <span id="overWarnMax"></span>. The excess will be recorded as an <strong>overpayment / credit</strong>.
                     </div>
                 </div>
 
@@ -356,7 +361,7 @@
                 <span class="sp-val gold" id="spPayingNow">Rs 0.00</span>
             </div>
             <div class="sp-row">
-                <span class="sp-label">Still Remaining</span>
+                <span class="sp-label" id="spRemainingLabel">Still Remaining</span>
                 <span class="sp-val" id="spRemaining">Rs 0.00</span>
             </div>
 
@@ -586,7 +591,6 @@ function onAmountChange() {
     if (val > totalBalance && totalBalance > 0) {
         warn.style.display = 'block';
         document.getElementById('overWarnMax').textContent = fmt(totalBalance);
-        val = totalBalance;
     } else {
         warn.style.display = 'none';
     }
@@ -598,7 +602,7 @@ function onAmountChange() {
 // CORE: CASCADE PAYMENT ACROSS MONTHS (oldest first)
 // ══════════════════════════════════════════════════════════
 function distribute(total) {
-    total = Math.min(total, totalBalance);
+    // Do NOT cap — allow overpayment. The excess is recorded as credit.
     let bucket = total;
 
     const alloc = allMonths.map(m => {
@@ -609,7 +613,7 @@ function distribute(total) {
     });
 
     renderTable(alloc);
-    buildHiddenInputs(alloc);
+    buildHiddenInputs(alloc, total);
     updatePanel(total, alloc);
 
     document.getElementById('submitBtn').disabled = (total <= 0 || !memberIdInput.value);
@@ -732,46 +736,82 @@ function goPage(p) {
 // SYNC PAID AMOUNT TO HIDDEN INPUT FOR FORM SUBMISSION
 // One row = one transaction. Just pass the total amount.
 // ══════════════════════════════════════════════════════════
-function buildHiddenInputs(alloc) {
-    const total = alloc.reduce((s, a) => s + (a.applying || 0), 0);
-    document.getElementById('paidAmountHidden').value = total.toFixed(2);
+function buildHiddenInputs(alloc, rawTotal) {
+    // Use the raw entered amount — NOT the alloc sum which is capped per-month.
+    // This ensures overpayments are submitted correctly to the controller.
+    document.getElementById('paidAmountHidden').value = parseFloat(rawTotal || 0).toFixed(2);
 }
 
 // ══════════════════════════════════════════════════════════
 // SUMMARY PANEL
 // ══════════════════════════════════════════════════════════
 function updatePanel(paying, alloc) {
+    const overpaid  = Math.max(0, paying - totalBalance);
     const remaining = Math.max(0, totalBalance - paying);
-    const pct = totalBalance > 0 ? Math.min(100, (paying / totalBalance) * 100) : 0;
+    const isOver    = paying > totalBalance && totalBalance > 0;
+    const pct       = totalBalance > 0 ? Math.min(100, (paying / totalBalance) * 100) : 0;
 
-    document.getElementById('spPayingNow').textContent = fmt(paying);
-    document.getElementById('spRemaining').textContent = fmt(remaining);
-    document.getElementById('spOutstanding').textContent = fmt(totalBalance);
+    document.getElementById('spPayingNow').textContent    = fmt(paying);
+    document.getElementById('spOutstanding').textContent  = fmt(totalBalance);
 
+    // Remaining / Credit row
     const remEl = document.getElementById('spRemaining');
-    remEl.className = 'sp-val ' + (remaining > 0 ? 'red' : 'green');
+    if (isOver) {
+        remEl.textContent  = '+ ' + fmt(overpaid) + ' credit';
+        remEl.className    = 'sp-val' + ' purple';
+    } else {
+        remEl.textContent  = fmt(remaining);
+        remEl.className    = 'sp-val ' + (remaining > 0 ? 'red' : 'green');
+    }
 
-    document.getElementById('spProgFill').style.width  = pct.toFixed(1) + '%';
-    document.getElementById('spProgPct').textContent   = pct.toFixed(0) + '% of balance covered';
+    // Update label text
+    const labelEl = document.getElementById('spRemainingLabel');
+    if (labelEl) labelEl.textContent = isOver ? 'Credit / Overpaid' : 'Still Remaining';
 
-    const list    = document.getElementById('spMonthList');
-    const active  = alloc.filter(a => a.applying > 0);
+    // Progress bar — purple when overpaid
+    const fill = document.getElementById('spProgFill');
+    fill.style.width      = '100%';
+    fill.style.background = isOver
+        ? 'linear-gradient(90deg,#7c3aed,#a78bfa)'
+        : 'linear-gradient(90deg,var(--gold),var(--gold-lt))';
+    if (!isOver) fill.style.width = pct.toFixed(1) + '%';
+
+    document.getElementById('spProgPct').textContent = isOver
+        ? '✓ Fully paid + Rs ' + parseFloat(overpaid).toFixed(2) + ' overpaid'
+        : pct.toFixed(0) + '% of balance covered';
+
+    // Month breakdown list
+    const list   = document.getElementById('spMonthList');
+    const active = alloc.filter(a => a.applying > 0);
 
     if (!active.length) {
         list.innerHTML = '<div style="font-size:12px;color:#7a9abc;padding:6px 0;">Enter an amount to see breakdown.</div>';
         return;
     }
 
-    list.innerHTML = active.map(a => {
+    let rows = active.map(a => {
         const isFull = a.applying >= a.balance - 0.001;
         return `<div class="sp-mo-row">
             <span class="sp-mo-name">${a.label}</span>
             <div class="sp-mo-right">
                 <div class="sp-mo-amt ${isFull ? 'full' : 'partial'}">${fmt(a.applying)}</div>
-                <div class="sp-mo-tag">${isFull ? '✓ Fully covered' : '~ Partial payment'}</div>
+                <div class="sp-mo-tag">${isFull ? '✓ Fully covered' : '~ Partial'}</div>
             </div>
         </div>`;
     }).join('');
+
+    // Append overpaid credit row if applicable
+    if (isOver) {
+        rows += `<div class="sp-mo-row">
+            <span class="sp-mo-name" style="color:#a78bfa;">Advance / Credit</span>
+            <div class="sp-mo-right">
+                <div class="sp-mo-amt" style="color:#a78bfa;font-weight:700;">+ ${fmt(overpaid)}</div>
+                <div class="sp-mo-tag" style="color:#7c3aed;">Overpayment</div>
+            </div>
+        </div>`;
+    }
+
+    list.innerHTML = rows;
 }
 </script>
 @endpush

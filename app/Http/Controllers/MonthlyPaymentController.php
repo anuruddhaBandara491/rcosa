@@ -121,7 +121,7 @@ class MonthlyPaymentController extends Controller
             'notes'          => ['nullable', 'string', 'max:500'],
         ], [
             'member_id.required' => 'Please search and select a member.',
-            'paid_amount.min'    => 'Payment amount must be greater than zero.',
+            // 'paid_amount.min'    => 'Payment amount must be greater than zero.',
         ]);
 
         $member     = Member::findOrFail($validated['member_id']);
