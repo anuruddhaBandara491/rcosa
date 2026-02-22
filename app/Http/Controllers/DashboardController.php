@@ -10,74 +10,105 @@ use App\Models\Donation;
 
 class DashboardController extends Controller
 {
-    /**
-     * Display the admin dashboard with aggregated statistics.
-     */
     public function index()
     {
-        // ── Member Count ─────────────────────────────────────────────────
+        $fee = MonthlyPayment::monthlyFee();
+
+        // ── Member Count ──────────────────────────────────────────────
         $totalMembers = Member::count();
 
-        // ── Registration Payments ────────────────────────────────────────
-        // Count of members whose registration fee is NOT yet paid
-        $pendingRegistration = Member::whereDoesntHave('registrationPayment', fn ($q) =>
+        // ── Registration Payments ─────────────────────────────────────
+        $pendingRegistration = Member::whereDoesntHave('registrationPayment', fn($q) =>
             $q->where('status', 'paid')
         )->count();
 
-        // Sum of all confirmed registration fee income
         $registrationIncome = RegistrationPayment::sum('paid_amount');
 
-        // ── Monthly Fees ─────────────────────────────────────────────────
-        // Total outstanding amount for the current month
-        $monthlyFeesPending = MonthlyPayment::whereIn('status', ['unpaid', 'partial'])
-            ->where('month', now()->month)
-            ->where('year',  now()->year)
-            ->sum('balance_amount');
+        // ── Monthly Fees (new transaction-based schema) ───────────────
 
-        // Sum of all collected monthly fees
-        $monthlyIncome = MonthlyPayment::sum('total_amount');
+        // Total collected across ALL monthly payment transactions
+        $monthlyIncome = (float) MonthlyPayment::sum('paid_amount');
 
-        // ── Donations ────────────────────────────────────────────────────
-        $totalDonations = Donation::where('status', 'received')->sum('amount');
+        // Total due across all members (months × fee per member)
+        // We compute this by summing each member's months × fee
+        $totalDue = Member::all()->sum(function ($member) use ($fee) {
+            return count(MonthlyPayment::allMonthsForMember($member)) * $fee;
+        });
 
-        // ── Total Income ─────────────────────────────────────────────────
+        // Outstanding = total due − total collected (floor at 0)
+        $monthlyOutstanding = max(0, $totalDue - $monthlyIncome);
+
+        // Counts by status of latest transaction per member
+        // A member is "fully paid" if their latest transaction shows paid/overpaid
+        $countPaid     = MonthlyPayment::where('status', 'paid')->count();
+        $countPartial  = MonthlyPayment::countPartial();
+        $countOverpaid = MonthlyPayment::where('status', 'overpaid')->count();
+        // Members who have NO payment transaction yet (never paid anything)
+        $countNeverPaid = Member::whereDoesntHave('monthlyPayments')->count();
+
+        // ── Donations ─────────────────────────────────────────────────
+        $totalDonations = (float) Donation::where('status', 'received')->sum('amount');
+
+        // ── Total Income ──────────────────────────────────────────────
         $totalIncome = $registrationIncome + $monthlyIncome + $totalDonations;
 
-        // ── Recent Members (latest 6) ─────────────────────────────────────
-        // We load reg & monthly payment status via eager loading
-        $recentMembers = Member::with(['registrationPayment', 'currentMonthPayment'])
+        // ── Recent Monthly Transactions (latest 5) ────────────────────
+        $recentMonthlyPayments = MonthlyPayment::with('member')
+            ->orderBy('payment_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->take(5)
+            ->get();
+
+        // ── Recent Members (latest 6) ─────────────────────────────────
+        $recentMembers = Member::with(['registrationPayment', 'monthlyPayments'])
             ->latest()
             ->take(6)
             ->get()
-            ->map(function ($member) {
-                $member->reg_status     = optional($member->registrationPayment)->status ?? 'pending';
-                $member->monthly_status = optional($member->currentMonthPayment)->status  ?? 'pending';
+            ->map(function ($member) use ($fee) {
+                // Registration status
+                $member->reg_status = optional($member->registrationPayment)->status ?? 'pending';
+
+                // Monthly status: compare total paid vs total due
+                $totalPaid   = (float) $member->monthlyPayments->sum('paid_amount');
+                $monthsCount = count(MonthlyPayment::allMonthsForMember($member));
+                $totalDue    = $monthsCount * $fee;
+
+                if ($totalPaid <= 0) {
+                    $member->monthly_status = 'unpaid';
+                } elseif ($totalPaid >= $totalDue + 0.001) {
+                    $member->monthly_status = 'overpaid';
+                } elseif ($totalPaid >= $totalDue - 0.001) {
+                    $member->monthly_status = 'paid';
+                } else {
+                    $member->monthly_status = 'partial';
+                }
+
+                $member->monthly_paid    = $totalPaid;
+                $member->monthly_balance = max(0, $totalDue - $totalPaid);
+
                 return $member;
             });
-        $totalDonations   = Donation::received()->sum('amount');
-        $donationsThisMonth = Donation::received()
-            ->whereYear('donation_date',  now()->year)
-            ->whereMonth('donation_date', now()->month)
-            ->sum('amount');
 
-        // ── Pass badge counts to layout (sidebar notification pills) ─────
+        // ── Sidebar badge counts ──────────────────────────────────────
         view()->share('pendingReg',     $pendingRegistration);
-        view()->share('pendingMonthly', MonthlyPayment::where('status', 'pending')->count());
+        view()->share('pendingMonthly', $countPartial + $countNeverPaid);
 
         return view('dashboard', [
             'stats' => [
                 'total_members'         => $totalMembers,
                 'pending_registration'  => $pendingRegistration,
-                'monthly_fees_pending'  => $monthlyFeesPending,
+                'monthly_outstanding'   => $monthlyOutstanding,
+                'monthly_income'        => $monthlyIncome,
+                'count_paid'            => $countPaid,
+                'count_partial'         => $countPartial,
+                'count_overpaid'        => $countOverpaid,
+                'count_never_paid'      => $countNeverPaid,
                 'total_donations'       => $totalDonations,
                 'registration_income'   => $registrationIncome,
-                'monthly_income'        => $monthlyIncome,
                 'total_income'          => $totalIncome,
-                'total_donations'        => $totalDonations,
-                'donations_this_month'   => $donationsThisMonth,
-                'donation_count'         => Donation::received()->count(),
             ],
-            'recentMembers' => $recentMembers,
+            'recentMembers'         => $recentMembers,
+            'recentMonthlyPayments' => $recentMonthlyPayments,
         ]);
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class MonthlyPayment extends Model
 {
@@ -236,4 +237,14 @@ class MonthlyPayment extends Model
                ->orWhere('phone_number',      'like', "%{$term}%")
         );
     }
+     public function scopeCountPartial($q){
+        return $q->whereIn('id', function ($query) {
+            $query->selectRaw('MAX(payment_date)')  // or MAX(payment_date) if available
+            ->from('monthly_payments')
+            ->groupBy('member_id');
+        })
+        ->where('status', 'partial')
+        ->count();
+    }
+
 }
